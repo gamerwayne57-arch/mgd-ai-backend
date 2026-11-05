@@ -6,15 +6,14 @@ import edge_tts
 from bs4 import BeautifulSoup
 
 app = Flask(__name__)
-# Permite que o site comunique com o servidor
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODELO_TEXTO = "openai/gpt-oss-120b"
-MODELO_VISAO = "llama-3.2-11b-vision-preview"
-VOZ_NEURAL = "pt-BR-FranciscaNeural" # A voz neural que tu gostas
+# MODELO DE VISÃO CORRIGIDO PARA O QUE FUNCIONA NA GROQ
+MODELO_VISAO = "qwen/qwen3.8-27b" 
+VOZ_NEURAL = "pt-BR-FranciscaNeural"
 
-# Memória temporária no servidor
 memoria_longa = []
 
 @app.route('/', methods=['GET'])
@@ -35,7 +34,7 @@ def chat():
 
     global memoria_longa
 
-    # Comando de memória
+    # Comandos de memória
     if re.match(r"^(?:lembra-te|lembre-se|guarda|memoriza)\s+que\s+(.+)$", pergunta, re.IGNORECASE):
         info = re.match(r"^(?:lembra-te|lembre-se|guarda|memoriza)\s+que\s+(.+)$", pergunta, re.IGNORECASE).group(1).strip()
         if info not in memoria_longa:
@@ -62,7 +61,13 @@ def chat():
     for msg in historico[-10:]: mensagens.append(msg)
 
     if imagem_base64:
-        mensagens.append({"role": "user", "content": [{"type": "text", "text": pergunta}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{imagem_base64}"}}]})
+        mensagens.append({
+            "role": "user", 
+            "content": [
+                {"type": "text", "text": pergunta},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{imagem_base64}"}}
+            ]
+        })
         modelo_usado = MODELO_VISAO
     else:
         mensagens.append({"role": "user", "content": pergunta})
@@ -78,7 +83,7 @@ def chat():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ROTA PARA GERAR A VOZ NEURAL (EDGE-TTS)
+# Rota para gerar a voz neural
 @app.route('/tts', methods=['POST'])
 def tts():
     dados = request.json
