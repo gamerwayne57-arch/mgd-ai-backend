@@ -10,15 +10,47 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODELO_TEXTO = "openai/gpt-oss-120b"
-# MODELO DE VISÃO CORRIGIDO PARA O QUE FUNCIONA NA GROQ
 MODELO_VISAO = "qwen/qwen3.8-27b" 
 VOZ_NEURAL = "pt-BR-FranciscaNeural"
 
 memoria_longa = []
 
+# MEMÓRIA PÚBLICA DO MGD AI (Likes, Dislikes e Comentários)
+ai_public_data = {
+    "likes": 0,
+    "dislikes": 0,
+    "comments": []
+}
+
 @app.route('/', methods=['GET'])
 def home():
     return "Servidor MGD AI V94 (Web) está ONLINE! 🚀"
+
+# Rota para o site buscar as reações públicas
+@app.route('/reactions', methods=['GET'])
+def get_reactions():
+    return jsonify(ai_public_data)
+
+# Rota para adicionar like/dislike
+@app.route('/react', methods=['POST'])
+def react():
+    dados = request.json
+    acao = dados.get("action")
+    if acao == "like":
+        ai_public_data["likes"] += 1
+    elif acao == "dislike":
+        ai_public_data["dislikes"] += 1
+    return jsonify(ai_public_data)
+
+# Rota para adicionar um comentário público
+@app.route('/comment', methods=['POST'])
+def add_comment():
+    dados = request.json
+    user = dados.get("user", "Anonimo")
+    text = dados.get("text", "")
+    if text:
+        ai_public_data["comments"].append({"user": user, "text": text})
+    return jsonify(ai_public_data)
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -34,7 +66,6 @@ def chat():
 
     global memoria_longa
 
-    # Comandos de memória
     if re.match(r"^(?:lembra-te|lembre-se|guarda|memoriza)\s+que\s+(.+)$", pergunta, re.IGNORECASE):
         info = re.match(r"^(?:lembra-te|lembre-se|guarda|memoriza)\s+que\s+(.+)$", pergunta, re.IGNORECASE).group(1).strip()
         if info not in memoria_longa:
@@ -42,7 +73,6 @@ def chat():
             return jsonify({"reply": f"Memória guardada: {info}"})
         return jsonify({"reply": "Já tenho essa informação guardada."})
 
-    # Leitura de links
     urls = re.findall(r'(https?://[^\s]+)', pergunta)
     if urls and not imagem_base64:
         try:
@@ -54,20 +84,14 @@ def chat():
         except Exception:
             pass
 
-    instrucao_sistema = "Es a MGD AI, a inteligencia artificial oficial da MGD REDLINE. O teu criador e Wayne Matimbe. Responde no idioma do utilizador com clareza e formatação de código."
+    instrucao_sistema = "Es a MGD AI, a inteligencia artificial oficial da MGD REDLINE. Responde no idioma do utilizador com clareza e formatação de código."
     if memoria_longa: instrucao_sistema += "\n\nMEMÓRIA: " + ", ".join(memoria_longa)
 
     mensagens = [{"role": "system", "content": instrucao_sistema}]
     for msg in historico[-10:]: mensagens.append(msg)
 
     if imagem_base64:
-        mensagens.append({
-            "role": "user", 
-            "content": [
-                {"type": "text", "text": pergunta},
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{imagem_base64}"}}
-            ]
-        })
+        mensagens.append({"role": "user", "content": [{"type": "text", "text": pergunta}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{imagem_base64}"}}]})
         modelo_usado = MODELO_VISAO
     else:
         mensagens.append({"role": "user", "content": pergunta})
@@ -83,7 +107,6 @@ def chat():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Rota para gerar a voz neural
 @app.route('/tts', methods=['POST'])
 def tts():
     dados = request.json
