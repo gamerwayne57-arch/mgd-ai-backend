@@ -15,7 +15,6 @@ VOZ_NEURAL = "pt-BR-FranciscaNeural"
 
 memoria_longa = []
 
-# MEMÓRIA PÚBLICA DO MGD AI (Likes, Dislikes e Comentários)
 ai_public_data = {
     "likes": 0,
     "dislikes": 0,
@@ -26,30 +25,24 @@ ai_public_data = {
 def home():
     return "Servidor MGD AI V94 (Web) está ONLINE! 🚀"
 
-# Rota para o site buscar as reações públicas
 @app.route('/reactions', methods=['GET'])
 def get_reactions():
     return jsonify(ai_public_data)
 
-# Rota para adicionar like/dislike
 @app.route('/react', methods=['POST'])
 def react():
     dados = request.json
     acao = dados.get("action")
-    if acao == "like":
-        ai_public_data["likes"] += 1
-    elif acao == "dislike":
-        ai_public_data["dislikes"] += 1
+    if acao == "like": ai_public_data["likes"] += 1
+    elif acao == "dislike": ai_public_data["dislikes"] += 1
     return jsonify(ai_public_data)
 
-# Rota para adicionar um comentário público
 @app.route('/comment', methods=['POST'])
 def add_comment():
     dados = request.json
     user = dados.get("user", "Anonimo")
     text = dados.get("text", "")
-    if text:
-        ai_public_data["comments"].append({"user": user, "text": text})
+    if text: ai_public_data["comments"].append({"user": user, "text": text})
     return jsonify(ai_public_data)
 
 @app.route('/chat', methods=['POST'])
@@ -84,7 +77,13 @@ def chat():
         except Exception:
             pass
 
-    instrucao_sistema = "Es a MGD AI, a inteligencia artificial oficial da MGD REDLINE. Responde no idioma do utilizador com clareza e formatação de código."
+    # RESTAURADA A IDENTIDADE DO CRIADOR
+    instrucao_sistema = (
+        "Es a MGD AI, a inteligencia artificial oficial e assistente geral da MGD REDLINE. "
+        "O teu criador e Wayne Matimbe, tambem conhecido como CEO Wayne, fundador da MGD REDLINE. "
+        "A MGD REDLINE e uma empresa focada em tecnologia e jogos. "
+        "Responde no idioma do utilizador com clareza e formatação de código."
+    )
     if memoria_longa: instrucao_sistema += "\n\nMEMÓRIA: " + ", ".join(memoria_longa)
 
     mensagens = [{"role": "system", "content": instrucao_sistema}]
