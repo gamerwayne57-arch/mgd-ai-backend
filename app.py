@@ -15,35 +15,49 @@ VOZ_NEURAL = "pt-BR-FranciscaNeural"
 
 memoria_longa = []
 
-ai_public_data = {
-    "likes": 0,
-    "dislikes": 0,
-    "comments": []
+# MEMÓRIA PÚBLICA PARA TODOS OS ITENS DO CATÁLOGO
+site_data = {
+    "mgd_ai_beta": {"likes": 0, "dislikes": 0, "comments": []},
+    "site": {"likes": 0, "dislikes": 0, "comments": []},
+    "app": {"likes": 0, "dislikes": 0, "comments": []},
+    "jogo": {"likes": 0, "dislikes": 0, "comments": []},
+    "outros": {"likes": 0, "dislikes": 0, "comments": []}
 }
 
 @app.route('/', methods=['GET'])
 def home():
     return "Servidor MGD AI V94 (Web) está ONLINE! 🚀"
 
-@app.route('/reactions', methods=['GET'])
-def get_reactions():
-    return jsonify(ai_public_data)
+# ROTA PARA BUSCAR AS REAÇÕES DE UM ITEM ESPECÍFICO
+@app.route('/reactions/<item_id>', methods=['GET'])
+def get_reactions(item_id):
+    if item_id not in site_data:
+        site_data[item_id] = {"likes": 0, "dislikes": 0, "comments": []}
+    return jsonify(site_data[item_id])
 
-@app.route('/react', methods=['POST'])
-def react():
+# ROTA PARA ADICIONAR LIKE/DISLIKE
+@app.route('/react/<item_id>', methods=['POST'])
+def react(item_id):
     dados = request.json
     acao = dados.get("action")
-    if acao == "like": ai_public_data["likes"] += 1
-    elif acao == "dislike": ai_public_data["dislikes"] += 1
-    return jsonify(ai_public_data)
+    if item_id not in site_data:
+        site_data[item_id] = {"likes": 0, "dislikes": 0, "comments": []}
+    
+    if acao == "like": site_data[item_id]["likes"] += 1
+    elif acao == "dislike": site_data[item_id]["dislikes"] += 1
+    return jsonify(site_data[item_id])
 
-@app.route('/comment', methods=['POST'])
-def add_comment():
+# ROTA PARA ADICIONAR UM COMENTÁRIO
+@app.route('/comment/<item_id>', methods=['POST'])
+def add_comment(item_id):
     dados = request.json
     user = dados.get("user", "Anonimo")
     text = dados.get("text", "")
-    if text: ai_public_data["comments"].append({"user": user, "text": text})
-    return jsonify(ai_public_data)
+    if item_id not in site_data:
+        site_data[item_id] = {"likes": 0, "dislikes": 0, "comments": []}
+    
+    if text: site_data[item_id]["comments"].append({"user": user, "text": text})
+    return jsonify(site_data[item_id])
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -77,7 +91,6 @@ def chat():
         except Exception:
             pass
 
-    # RESTAURADA A IDENTIDADE DO CRIADOR
     instrucao_sistema = (
         "Es a MGD AI, a inteligencia artificial oficial e assistente geral da MGD REDLINE. "
         "O teu criador e Wayne Matimbe, tambem conhecido como CEO Wayne, fundador da MGD REDLINE. "
