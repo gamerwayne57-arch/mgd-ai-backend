@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-MODELO_TEXTO = "llama-3.1-8b-instant" # Modelo atualizado e rápido
+MODELO_TEXTO = "openai/gpt-oss-120b" # Modelo topo de gama que já testaste
 
 @app.route('/', methods=['GET'])
 def home():
