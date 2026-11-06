@@ -14,14 +14,13 @@ MODELO_VISAO = "qwen/qwen3.8-27b"
 VOZ_NEURAL = "pt-BR-FranciscaNeural"
 
 memoria_longa = []
-
-# MEMÓRIA PÚBLICA PARA TODOS OS ITENS DO CATÁLOGO
 site_data = {
     "mgd_ai_beta": {"likes": 0, "dislikes": 0, "comments": []},
     "site": {"likes": 0, "dislikes": 0, "comments": []},
     "app": {"likes": 0, "dislikes": 0, "comments": []},
     "jogo": {"likes": 0, "dislikes": 0, "comments": []},
-    "outros": {"likes": 0, "dislikes": 0, "comments": []}
+    "outros": {"likes": 0, "dislikes": 0, "comments": []},
+    "mgd_engine_3d": {"likes": 0, "dislikes": 0, "comments": []}
 }
 
 @app.route('/', methods=['GET'])
@@ -40,7 +39,6 @@ def react(item_id):
     acao = dados.get("action")
     if item_id not in site_data:
         site_data[item_id] = {"likes": 0, "dislikes": 0, "comments": []}
-    
     if acao == "like": site_data[item_id]["likes"] += 1
     elif acao == "dislike": site_data[item_id]["dislikes"] += 1
     return jsonify(site_data[item_id])
@@ -52,7 +50,6 @@ def add_comment(item_id):
     text = dados.get("text", "")
     if item_id not in site_data:
         site_data[item_id] = {"likes": 0, "dislikes": 0, "comments": []}
-    
     if text: site_data[item_id]["comments"].append({"user": user, "text": text})
     return jsonify(site_data[item_id])
 
@@ -80,21 +77,26 @@ def chat():
     urls = re.findall(r'(https?://[^\s]+)', pergunta)
     if urls and not imagem_base64:
         try:
-            res = requests.get(urls[0], timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+            # Simula um navegador real para não ser bloqueado
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+            res = requests.get(urls[0], timeout=10, headers=headers)
             soup = BeautifulSoup(res.text, 'html.parser')
-            for script in soup(["script", "style"]): script.decompose()
+            for script in soup(["script", "style", "nav", "footer", "header"]): script.decompose()
             texto_site = soup.get_text(separator=' ', strip=True)[:3000]
-            pergunta = f"O utilizador enviou o link {urls[0]}. Conteúdo: {texto_site}\n\nResponda: {pergunta}"
+            
+            if len(texto_site) < 50:
+                pergunta = f"O utilizador enviou o link {urls[0]}, mas o site bloqueou a leitura automática. Avise o utilizador que não conseguiu ler o conteúdo devido a proteções do site."
+            else:
+                pergunta = f"O utilizador enviou o link {urls[0]}. Aqui está o texto extraído do site:\n\n{texto_site}\n\nCom base neste texto, responda: {pergunta}"
         except Exception:
-            pass
+            pergunta = f"O utilizador enviou o link {urls[0]}, mas ocorreu um erro ao tentar aceder. Avise o utilizador que não foi possível abrir o link."
 
     instrucao_sistema = (
         "Es a MGD AI, a inteligencia artificial oficial e assistente geral da MGD REDLINE. "
         "O teu criador e Wayne Matimbe, tambem conhecido como CEO Wayne, fundador da MGD REDLINE. "
-        "A MGD REDLINE e uma empresa focada em tecnologia e jogos. "
-        "REGRA DE FORMATAÇÃO OBRIGATÓRIA: NUNCA uses asteriscos (**) para destacar palavras ou colocar negrito. Escreve o texto normal e limpo. "
+        "REGRA DE FORMATAÇÃO: NUNCA uses asteriscos (**). Escreve o texto normal e limpo. "
         "Usa blocos de codigo Markdown (```) APENAS para codigo de programacao real. "
-        "NUNCA coloques respostas normais dentro de blocos de codigo ou entre crases (`). Responde sempre em texto puro, a menos que seja codigo."
+        "REGRA DE VERDADE: Se receberes um texto extraido de um site, resume APENAS o que esta nesse texto. Se o texto estiver vazio ou for um aviso de erro, diz ao utilizador que o site bloqueou a leitura. NUNCA inventes o conteudo do site."
     )
     if memoria_longa: instrucao_sistema += "\n\nMEMÓRIA: " + ", ".join(memoria_longa)
 
