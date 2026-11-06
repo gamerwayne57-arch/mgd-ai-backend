@@ -28,14 +28,12 @@ site_data = {
 def home():
     return "Servidor MGD AI V94 (Web) está ONLINE! 🚀"
 
-# ROTA PARA BUSCAR AS REAÇÕES DE UM ITEM ESPECÍFICO
 @app.route('/reactions/<item_id>', methods=['GET'])
 def get_reactions(item_id):
     if item_id not in site_data:
         site_data[item_id] = {"likes": 0, "dislikes": 0, "comments": []}
     return jsonify(site_data[item_id])
 
-# ROTA PARA ADICIONAR LIKE/DISLIKE
 @app.route('/react/<item_id>', methods=['POST'])
 def react(item_id):
     dados = request.json
@@ -47,7 +45,6 @@ def react(item_id):
     elif acao == "dislike": site_data[item_id]["dislikes"] += 1
     return jsonify(site_data[item_id])
 
-# ROTA PARA ADICIONAR UM COMENTÁRIO
 @app.route('/comment/<item_id>', methods=['POST'])
 def add_comment(item_id):
     dados = request.json
@@ -95,7 +92,9 @@ def chat():
         "Es a MGD AI, a inteligencia artificial oficial e assistente geral da MGD REDLINE. "
         "O teu criador e Wayne Matimbe, tambem conhecido como CEO Wayne, fundador da MGD REDLINE. "
         "A MGD REDLINE e uma empresa focada em tecnologia e jogos. "
-        "Responde no idioma do utilizador com clareza e formatação de código."
+        "REGRA DE FORMATAÇÃO OBRIGATÓRIA: NUNCA uses asteriscos (**) para destacar palavras ou colocar negrito. Escreve o texto normal e limpo. "
+        "Usa blocos de codigo Markdown (```) APENAS para codigo de programacao real. "
+        "NUNCA coloques respostas normais dentro de blocos de codigo ou entre crases (`). Responde sempre em texto puro, a menos que seja codigo."
     )
     if memoria_longa: instrucao_sistema += "\n\nMEMÓRIA: " + ", ".join(memoria_longa)
 
